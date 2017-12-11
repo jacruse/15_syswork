@@ -16,7 +16,7 @@
 int main(int argc, char ** argv) {
   int sd, val, fd, shmd;
   union semun value_passer;
-  char story[256];
+  char story[1024];
   
   if (argc < 2) {
     printf("Too few args...\nTry again next time\n");
@@ -50,10 +50,18 @@ int main(int argc, char ** argv) {
     }
     printf("value set to: %d\n", val);
 
-    shmd = shmget(SHM_KEY, 32, IPC_CREAT | IPC_EXCL);
+    if ((shmd = shmget(SHM_KEY, 32, IPC_CREAT | IPC_EXCL | 0644)) == -1) {
+      printf("%s\n", strerror(errno));
+      exit(0);
+    }
 
-    fd = open("story", O_CREAT | O_TRUNC, 0666);
-    close(fd);
+    if ((fd = open("story", O_CREAT | O_TRUNC, 0666)) == -1) {
+      printf("%s\n", strerror(errno));
+    }
+
+    if (close(fd) == -1) {
+      printf("%s\n", strerror(errno));
+    }     
   }
 
   else if (!strcmp(argv[1], "-v")) {
@@ -110,7 +118,10 @@ int main(int argc, char ** argv) {
     }
 
     printf("semaphore removed\n");
-    execlp("rm", "story", (char *) NULL);   
+
+    remove("story");
+
+    printf("story removed\n");
   }
 
   else {
